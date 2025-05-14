@@ -1,0 +1,119 @@
+# === LOGS ===
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === SYSTEM FILES ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# === PYTHON FILES ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# === ENVIRONMENTS ===
+.env
+.env.*
+*.env
+
+# Virtual environment folders
+venv/
+env/
+.venv/
+.conda/
+conda-env/
+
+# === PACKAGE MANAGEMENT ===
+# Pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Poetry
+poetry.lock
+
+# PyInstaller
+*.spec
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints
+
+# === OS AND EDITOR FILES ===
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows
+$RECYCLE.BIN/
+
+# JetBrains (PyCharm, IntelliJ)
+.idea/
+
+# VSCode
+.vscode/
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+# === TESTING ===
+coverage/
+*.cover
+*.coverage
+*.coveragerc
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+
+# === BUILD FILES ===
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# === DATABASE ===
+*.sqlite3
+*.db
+*.sql
+
+# === NODE.JS / FRONTEND ===
+node_modules/
+bower_components/
+*.tsbuildinfo
+
+# === ARCHIVES AND TEMP FILES ===
+*.bak
+*.tmp
+*.swp
+*.swo
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# === IMAGE METADATA ===
+*.xcf
+*.psd
+*.ai
+
+# === CUSTOM EXCLUSIONS ===
+# Ignore your own folders here
+
+data/*
+!data/.gitkeep
+!data/ground_truth/.gitkeep
+!data/surgeon_images_miccai_workshop/.gitkeep
+!data/surgeon_images_v2/.gitkeep
+!data/yasper_depth_model/.gitkeep
+
+models/DepthModels/MiDaS/weights/dpt_beit_large_512.pt
+models/SegmentationModels/mmsegmentation_mask2former/work_dirs
+
+output_image
