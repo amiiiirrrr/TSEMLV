@@ -106,8 +106,10 @@ bower_components/
 # === CUSTOM EXCLUSIONS ===
 # Ignore your own folders here
 
-data/*
-!data/.gitkeep
+data/ground_truth/*
+data/surgeon_images_miccai_workshop/*
+data/surgeon_images_v2/*
+data/yasper_depth_model/*
 !data/ground_truth/.gitkeep
 !data/surgeon_images_miccai_workshop/.gitkeep
 !data/surgeon_images_v2/.gitkeep
