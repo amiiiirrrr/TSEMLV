@@ -135,7 +135,9 @@ class Run:
 
                     P_c, v_L = estimate_instrument_pose(K_matrix, self.args.instrument_radius_mm, line_1_coeffs, line_2_coeffs)
 
-                    _, _, absolute_depth_map = self.depthScaleObj.estimate_scale_and_depth_map(K_matrix, P_c, v_L, si_mask, prediction_depth, self.path_save)
+                    P_s = self.depthScaleObj.translate_axis2shaft(P_c, r=2.4)
+
+                    _, _, absolute_depth_map = self.depthScaleObj.estimate_scale_and_depth_map(K_matrix, P_s, v_L, si_mask, prediction_depth, self.path_save)
 
                     estimated_tumor_size_results = self.measureTumorObj.measure_box_dimensions(K_matrix, absolute_depth_map, largest_tumor)
                     # for key, value in estimated_tumor_size_results.items():
