@@ -1,7 +1,6 @@
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-
 import sys
 sys.path.append('models/DepthModels/MiDaS/')
 sys.path.append('models/SegmentationModels/mmsegmentation_mask2former/')
@@ -24,6 +23,7 @@ from src.utils.common import calculate_average_image_oneChannel_v2, calculate_av
 from src.utils.seg_utils import SegmentationUtils
 from src.utils.visual_utils import create_segmentation_SI_Tumor_v1, visualize_function, dimmed_mask
 from src.evaluation import calculate_mae
+# from src.unik_depth import UnikDepther
 from src.measure_tumor_v1.measure_tumor_v1 import measureTumor_V1
 from src.measure_tumor_v2.find_scale import ScaleDepth
 from src.measure_tumor_v2.measure_tumor_v2 import MeasureTumor
@@ -60,6 +60,7 @@ class Run:
         self.depthUtilsObj = depthUtils(self.args)
         self.depthScaleObj = ScaleDepth(self.args)
         self.measureTumorObj = MeasureTumor(self.args)
+        # self.unikDeptherObj = UnikDepther(self.args)
         self.list_results = []
         
     def start_inferencing(self):
@@ -111,8 +112,12 @@ class Run:
                 # mask_SI_tumor, new_tumor_box = self.segUtilObj.create_mask_SI_tumor_v1(segment_map[0], largest_tumor)
                 cv2.imwrite(os.path.join(self.path_save, 'img_original.png'), self.img_original)
                 # cv2.imwrite(os.path.join(self.path_save, 'segment_map.png'), visual)
-                prediction_depth, depth_map_visualize, raw_depth255, idepth = self.depther.run(img_depth, os.path.join(self.path_save, name_image))
-                # plt.imsave(os.path.join(self.path_save, 'prediction_depth.png'), prediction_depth)
+
+                #For MiDaS
+                # prediction_depth, depth_map_visualize, raw_depth255, idepth = self.depther.run(img_depth, os.path.join(self.path_save, name_image))
+
+                # For Unik3d
+                prediction_depth = np.load(f"{self.path_save}/predicted_depth_unik3d_normalized.npy")
 
                 # undistorted_si_mask = self.camcal.undistort_image(self.img_original)
                 # cv2.imwrite(os.path.join(self.path_save, 'undistorted_si_mask.png'), undistorted_si_mask)
