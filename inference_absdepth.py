@@ -136,8 +136,7 @@ class Run:
                     P_c, v_L, viz_copy = estimate_instrument_pose(K_matrix, self.args.instrument_radius_mm, line_1_coeffs, line_2_coeffs, viz_copy)
                     # cv2.imwrite(os.path.join(self.path_save, 'viz_copy.png'), viz_copy)
 
-                    _, _, absolute_depth_map, viz_copy = self.depthScaleObj.estimate_scale_and_depth_map(K_matrix, P_c, v_L, si_mask, prediction_depth, self.path_save, viz_copy)
-                    cv2.imwrite(os.path.join(self.path_save, 'viz_copy.png'), viz_copy)
+                    _, _, absolute_depth_map = self.depthScaleObj.estimate_scale_and_depth_map(K_matrix, P_c, v_L, si_mask, prediction_depth, self.path_save)
 
                     estimated_tumor_size_results = self.measureTumorObj.measure_box_dimensions(K_matrix, absolute_depth_map, largest_tumor)
                     # for key, value in estimated_tumor_size_results.items():

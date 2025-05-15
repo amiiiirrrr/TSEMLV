@@ -13,6 +13,19 @@ class ScaleDepth:
         """
         ts = np.linspace(-T, T, N)
         return np.array([P_c + t * v_L for t in ts])
+    
+    def translate_axis2shaft(self, P_c, r=2.4):
+        """
+        Translate a point on the instrument axis to a corresponding point on the shaft axis, translated towards the camera/world origin.
+        Returns point on the shaft axis P_s.
+        P_c (3D point): point on instrument axis, where OP_c is perpendicular to v_L.
+        r (float): surgical instrument radius (in mm).
+        """
+        v_OP_c = P_c
+        v_OP_c_normalized = v_OP_c / np.linalg.norm(v_OP_c)
+
+        P_s = P_c - r * v_OP_c_normalized
+        return P_s
 
     def project_point(self, K, point3d):
         """
