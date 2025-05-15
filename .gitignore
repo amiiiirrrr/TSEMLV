@@ -115,9 +115,8 @@ data/yasper_depth_model/*
 !data/surgeon_images_v2/.gitkeep
 !data/yasper_depth_model/.gitkeep
 
-models/DepthModels/MiDaS/weights/dpt_beit_large_512.pt
-models/SegmentationModels/mmsegmentation_mask2former/work_dirs
-!models/
-!models/**/*
+# models/DepthModels/MiDaS/weights/dpt_beit_large_512.pt
+# models/SegmentationModels/mmsegmentation_mask2former/work_dirs
+!models/DetectionModels/yolov7/
 
 output_image/
