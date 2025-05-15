@@ -1,0 +1,1 @@
+identify -format "%f: %wx%h\n" data/surgeon_images_miccai_workshop/*.png

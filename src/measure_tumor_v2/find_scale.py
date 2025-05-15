@@ -97,9 +97,14 @@ class ScaleDepth:
         """
 
         # Sample & project
+        print('P_c', P_c)
+        print('v_L', v_L)
         pts_3d = self.generate_axis_samples(P_c, v_L, T, N)
+        print('pts_3d', pts_3d)
         proj = self.project_points(K, pts_3d)
+        print('proj', proj)
         valid = self.filter_points_by_mask(proj, mask)
+        print('valid', valid)
         
         # Overlay projected points on mask
         vis = cv2.cvtColor((mask * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
