@@ -138,12 +138,12 @@ class ScaleDepth:
         proj = self.project_points(K, pts_3d)
         # print('proj', proj)
 
-        pc_proj = self.project_point(K, P_c)
-        u_pc, v_pc = pc_proj
-        u_pc, v_pc = int(round(u_pc)), int(round(v_pc))
-        print('projprojprojprojprojprojprojprojproj', (u_pc, v_pc))
-        cv2.circle(viz_copy, (u_pc, v_pc), 7, (0, 255, 255), -1)
-        cv2.imwrite(os.path.join(path_save, 'viz_copy.png'), viz_copy)
+        # pc_proj = self.project_point(K, P_c)
+        # u_pc, v_pc = pc_proj
+        # u_pc, v_pc = int(round(u_pc)), int(round(v_pc))
+        # print('projprojprojprojprojprojprojprojproj', (u_pc, v_pc))
+        # cv2.circle(viz_copy, (u_pc, v_pc), 7, (0, 255, 255), -1)
+        # cv2.imwrite(os.path.join(path_save, 'viz_copy.png'), viz_copy)
         
         valid = self.filter_points_by_mask(proj, mask)
         # print('valid', valid)
