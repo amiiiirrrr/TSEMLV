@@ -14,6 +14,27 @@ class ScaleDepth:
         ts = np.linspace(-T, T, N)
         return np.array([P_c + t * v_L for t in ts])
 
+    def project_point(self, K, point3d):
+        """
+        Project a single 3D point into image coordinates using camera intrinsics.
+
+        Args:
+            K (np.ndarray): 3×3 camera intrinsic matrix.
+            point3d (array-like): 3D point in camera coordinates [X, Y, Z].
+
+        Returns:
+            (u, v): Pixel coordinates in the image.
+        """
+        X, Y, Z = point3d
+        if Z <= 0:
+            raise ValueError("Point is behind the camera (Z <= 0).")
+
+        # Convert to homogeneous image coordinates
+        p_h = K @ np.array([X, Y, Z])
+        u = p_h[0] / p_h[2]
+        v = p_h[1] / p_h[2]
+        return u, v
+
     def project_points(self, K, points_3d):
         """
         Project 3D points into the image using intrinsics K.
@@ -83,7 +104,7 @@ class ScaleDepth:
         """
         return s * D_rel + b
 
-    def estimate_scale_and_depth_map(self, K, P_c, v_L, mask, D_rel, path_save, T=80.0, N=100):
+    def estimate_scale_and_depth_map(self, K, P_c, v_L, mask, D_rel, path_save, viz_copy, T=80.0, N=100):
         """
         End-to-end: estimate scale from axis, then compute absolute depth map.
         Also saves:
@@ -97,14 +118,22 @@ class ScaleDepth:
         """
 
         # Sample & project
-        print('P_c', P_c)
-        print('v_L', v_L)
+        # print('P_c', P_c)
+        # print('v_L', v_L)
         pts_3d = self.generate_axis_samples(P_c, v_L, T, N)
-        print('pts_3d', pts_3d)
+        # print('pts_3d', pts_3d)
         proj = self.project_points(K, pts_3d)
-        print('proj', proj)
+        # print('proj', proj)
+
+        pc_proj = self.project_point(K, P_c)
+        u_pc, v_pc = pc_proj
+        u_pc, v_pc = int(round(u_pc)), int(round(v_pc))
+        print('projprojprojprojprojprojprojprojproj', (u_pc, v_pc))
+        cv2.circle(viz_copy, (u_pc, v_pc), 7, (0, 255, 255), -1)
+        cv2.imwrite(os.path.join(path_save, 'viz_copy.png'), viz_copy)
+        
         valid = self.filter_points_by_mask(proj, mask)
-        print('valid', valid)
+        # print('valid', valid)
         
         # Overlay projected points on mask
         vis = cv2.cvtColor((mask * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
@@ -113,6 +142,7 @@ class ScaleDepth:
             cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1)
         cv2.imwrite(os.path.join(path_save, 'projected_points_overlay.png'), vis)
         
+
         # Sample depths and fit
         samples = self.sample_relative_depth(D_rel, valid)
         if not samples:
@@ -134,5 +164,5 @@ class ScaleDepth:
         fig.savefig(os.path.join(path_save, 'D_abs_colorbar.png'), bbox_inches='tight', pad_inches=0.1)
         plt.close(fig)
         
-        return s, b, D_abs
+        return s, b, D_abs, viz_copy
 

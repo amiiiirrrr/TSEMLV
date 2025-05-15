@@ -7,7 +7,7 @@ from skimage.morphology import skeletonize
 from sklearn.linear_model import LinearRegression
 
 # --- Module: Estimate Instrument Pose ---
-def estimate_instrument_pose(K_matrix, instrument_radius_mm, line1_coeffs, line2_coeffs):
+def estimate_instrument_pose(K_matrix, instrument_radius_mm, line1_coeffs, line2_coeffs, viz_copy):
     """
     Estimates the 3D pose of a cylindrical instrument...
     """
@@ -69,13 +69,16 @@ def estimate_instrument_pose(K_matrix, instrument_radius_mm, line1_coeffs, line2
     v_OPc_unit = v_OPc_direction / v_OPc_direction_norm
 
     cos_alpha = np.clip(np.dot(n1_unit, n2_unit), -1.0, 1.0)
+    # print('cos_alpha', cos_alpha)
     alpha = np.arccos(cos_alpha)
+    # print('alpha', alpha)
 
     if alpha < 1e-6 or np.abs(alpha - np.pi) < 1e-6:
         print("Debug (estimate_pose): Error: Angle alpha between planes is too small or too large.")
         return None, None
 
     sin_alpha_half = np.sin(alpha / 2.0)
+    # print('sin_alpha_half', sin_alpha_half)
     if np.abs(sin_alpha_half) < 1e-9:
         print("Debug (estimate_pose): Error: sin(alpha/2) is close to zero.")
         return None, None
@@ -87,7 +90,7 @@ def estimate_instrument_pose(K_matrix, instrument_radius_mm, line1_coeffs, line2
             print(f"Debug (estimate_pose): Warning: Estimated Z-depth of P_c is negative ({P_c[2]:.3f}). Flipping sign.")
             P_c = -P_c # Flip to be in front of the camera
 
-    return P_c, v_L_unit
+    return P_c, v_L_unit, viz_copy
 
 def fit_shaft_lines(segmentation_mask, original_image_bgr, path_save):
 

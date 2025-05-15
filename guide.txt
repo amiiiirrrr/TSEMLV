@@ -1,1 +1,9 @@
+source ../../../../env/unik3d_env/bin/activate
+CUDA_VISIBLE_DEVICES=1 python inference_depth_unik3d.py 
+
+
+source ../../../../env/env39/bin/activate
+CUDA_VISIBLE_DEVICES=1 python inference_absdepth.py 
+
+
 identify -format "%f: %wx%h\n" data/surgeon_images_miccai_workshop/*.png
