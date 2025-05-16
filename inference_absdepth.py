@@ -71,7 +71,7 @@ class Run:
             os.makedirs(self.args.output_path, exist_ok=True)
         for path, img, im0s, vid_cap in self.dataset:
             print('path', path)
-            # if 'ANLLN_P1_16631' not in path:
+            # if 'WVDRSNDN_P1_27359' not in path:
             #     continue
             dict_result = {}
             height, width, _ = im0s.shape
@@ -134,7 +134,7 @@ class Run:
                 if line_1_coeffs is not None and line_2_coeffs is not None:
 
                     P_c, v_L, viz_copy = estimate_instrument_pose(K_matrix, self.args.instrument_radius_mm, line_1_coeffs, line_2_coeffs, viz_copy)
-                    # cv2.imwrite(os.path.join(self.path_save, 'viz_copy.png'), viz_copy)
+                    cv2.imwrite(os.path.join(self.path_save, 'viz_copy.png'), viz_copy)
 
                     P_s = self.depthScaleObj.translate_axis2shaft(P_c, r=self.args.instrument_radius_mm)
 

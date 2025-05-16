@@ -64,7 +64,7 @@ class ScaleDepth:
             projected.append((u, v, Z_true))
         return projected
 
-    def filter_points_by_mask(self, projected_pts, mask):
+    def filter_points_by_mask(self, projected_pts, mask, vis):
         """
         Keep only points whose projection falls inside the mask.
         Returns list of (u, v, Z_true).
@@ -73,9 +73,10 @@ class ScaleDepth:
         valid = []
         for u, v, Z in projected_pts:
             ui, vi = int(round(u)), int(round(v))
+            cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1)
             if 0 <= ui < W and 0 <= vi < H and mask[vi, ui]:
                 valid.append((u, v, Z))
-        return valid
+        return valid, vis
 
     def sample_relative_depth(self, D_rel, valid_projected):
         """
@@ -112,24 +113,24 @@ class ScaleDepth:
         b = zt_mean - s * zr_mean
         return s, b
     
-    def fit_inverse_model(self, samples):
-        """
-        Fit Z_true = a*(1/Z_rel) + b by least squares.
-        samples: list of (Z_rel, Z_true) where Z_rel is disparity-like.
-        """
-        # Build X = 1/Z_rel, Y = Z_true
-        Zrel = np.array([zr for zr, _ in samples])
-        Ztrue = np.array([zt for _, zt in samples])
+    # def fit_inverse_model(self, samples):
+    #     """
+    #     Fit Z_true = a*(1/Z_rel) + b by least squares.
+    #     samples: list of (Z_rel, Z_true) where Z_rel is disparity-like.
+    #     """
+    #     # Build X = 1/Z_rel, Y = Z_true
+    #     Zrel = np.array([zr for zr, _ in samples])
+    #     Ztrue = np.array([zt for _, zt in samples])
         
-        X = 1.0 / Zrel
-        Y = Ztrue
+    #     X = 1.0 / Zrel
+    #     Y = Ztrue
         
-        # compute means
-        Xm, Ym = X.mean(), Y.mean()
-        # slope & intercept
-        a = ((X - Xm) * (Y - Ym)).sum() / ((X - Xm)**2).sum()
-        b = Ym - a * Xm
-        return a, b
+    #     # compute means
+    #     Xm, Ym = X.mean(), Y.mean()
+    #     # slope & intercept
+    #     a = ((X - Xm) * (Y - Ym)).sum() / ((X - Xm)**2).sum()
+    #     b = Ym - a * Xm
+    #     return a, b
 
     def compute_absolute_depth_map(self, D_rel, s, b):
         """
@@ -138,12 +139,12 @@ class ScaleDepth:
         """
         return s * D_rel + b
     
-    def compute_absolute_depth_map_fromDisparity(self, D_rel, s, b):
-        """
-        Convert a relative depth map to absolute using s and b.
-        Returns absolute depth map.
-        """
-        return s * (1/D_rel) + b
+    # def compute_absolute_depth_map_fromDisparity(self, D_rel, s, b):
+    #     """
+    #     Convert a relative depth map to absolute using s and b.
+    #     Returns absolute depth map.
+    #     """
+    #     return s * (1/D_rel) + b
 
     def estimate_scale_and_depth_map(self, K, P_c, v_L, mask, D_rel, path_save, viz_copy, T=80.0, N=100):
         """
@@ -158,43 +159,25 @@ class ScaleDepth:
         s, b, D_abs.
         """
 
-        # Sample & project
-        # print('P_c', P_c)
-        # print('v_L', v_L)
-        pts_3d = self.generate_axis_samples(P_c, v_L, T, N)
-        # print('pts_3d', pts_3d)
-        proj = self.project_points(K, pts_3d)
-        # print('proj', proj)
-
-        # pc_proj = self.project_point(K, P_c)
-        # u_pc, v_pc = pc_proj
-        # u_pc, v_pc = int(round(u_pc)), int(round(v_pc))
-        # print('projprojprojprojprojprojprojprojproj', (u_pc, v_pc))
-        # cv2.circle(viz_copy, (u_pc, v_pc), 7, (0, 255, 255), -1)
-        # cv2.imwrite(os.path.join(path_save, 'viz_copy.png'), viz_copy)
-        
-        valid = self.filter_points_by_mask(proj, mask)
-        # print('valid', valid)
-        
-        # Overlay projected points on mask
-        vis = cv2.cvtColor((mask * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
-        for u, v, _ in valid:
-            ui, vi = int(round(u)), int(round(v))
-            cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1)
-        cv2.imwrite(os.path.join(path_save, 'projected_points_overlay.png'), vis)
-        
-
+        valid_points, viz_copy = self.find_valid_points(K, P_c, v_L, T, N, mask, viz_copy, path_save)
+        # print('valid_points', valid_points)
+        if len(valid_points)==0:
+            valid_points, viz_copy = self.find_valid_points(K, -P_c, v_L, T, N, mask, viz_copy, path_save)
+            if len(valid_points)==0:
+                print("No valid samples for scale estimation")
+                return None, None, None, None
         # Sample depths and fit
-        samples = self.sample_relative_depth(D_rel, valid)
-        if not samples:
-            print("No valid samples for scale estimation")
-            return None, None, None, None
+        samples = self.sample_relative_depth(D_rel, valid_points)
+        
         s, b = self.fit_scale_and_bias(samples)
         # s, b = self.fit_inverse_model(samples)
+        # s, b = self.fit_inverse_depth_model(samples)
         
         # Compute and save absolute depth
         D_abs = self.compute_absolute_depth_map(D_rel, s, b)
         # D_abs = self.compute_absolute_depth_map_fromDisparity(D_rel, s, b)
+        # D_abs = self.predict_true_depth_inverse(D_rel, s, b)
+
         abs_vis = (D_abs / (D_abs.max() + 1e-8) * 255).astype(np.uint8)
         cv2.imwrite(os.path.join(path_save, 'D_abs.png'), abs_vis)
         
@@ -209,4 +192,65 @@ class ScaleDepth:
         plt.close(fig)
         
         return s, b, D_abs, viz_copy
+    
+    def find_valid_points(self, K, P_c, v_L, T, N, mask, vis, path_save):
+        
+        # Sample & project
+        pts_3d = self.generate_axis_samples(P_c, v_L, T, N)
+        # print('pts_3d', pts_3d)
+        proj = self.project_points(K, pts_3d)
+        # print('proj', proj)
+        
+        # Overlay projected points on mask
+        vis = cv2.cvtColor((mask * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
+        valid, vis = self.filter_points_by_mask(proj, mask, vis)
+        cv2.imwrite(os.path.join(path_save, 'projected_points_overlay.png'), vis)
+        # print('valid', valid)
 
+        return valid, vis
+
+
+
+    # def fit_inverse_depth_model(self, samples):
+    #     """
+    #     Fit Z_true = 1/(a*Z_rel + b) via the linearization
+    #     1/Z_true = a*Z_rel + b.
+
+    #     Args:
+    #         samples: list of (Z_rel, Z_true) pairs.
+
+    #     Returns:
+    #         a, b floats
+    #     """
+    #     Zrel = np.array([zr for zr, _ in samples], dtype=np.float64)
+    #     Ztrue = np.array([zt for _, zt in samples], dtype=np.float64)
+        
+    #     # Discard any zeros for safety
+    #     valid = Ztrue > 1e-8
+    #     Zrel, Ztrue = Zrel[valid], Ztrue[valid]
+        
+    #     # Build design matrix and target
+    #     X = Zrel.reshape(-1,1)          # shape (M,1)
+    #     Y = (1.0 / Ztrue).reshape(-1,1) # shape (M,1)
+        
+    #     # Append ones for the intercept b
+    #     A = np.hstack([X, np.ones_like(X)])  # shape (M,2)
+        
+    #     # Solve A [a; b] = Y in least squares
+    #     ab, *_ = np.linalg.lstsq(A, Y, rcond=None)
+    #     a, b = ab.flatten()
+    #     return float(a), float(b)
+
+    # def predict_true_depth_inverse(self, Z_rel_map, a, b):
+    #     """
+    #     Convert a relative-depth map to true depth via:
+    #     Z_true = 1 / (a*Z_rel + b).
+
+    #     Args:
+    #         Z_rel_map: 2D array of relative-depth values.
+    #         a, b: fitted parameters.
+
+    #     Returns:
+    #         2D array of true depth.
+    #     """
+    #     return 1.0 / (a * Z_rel_map + b)

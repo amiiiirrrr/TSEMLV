@@ -65,9 +65,9 @@ def mae(list1, list2, list_type_predictions, list_sorted_dicts):
     list2 = [float(item) for item in list2]
 
     # print("list_sorted_dicts", list_sorted_dicts)
-    print("list gt", len(list1))
+    # print("list gt", len(list1))
     # print("list gt", sum(list1))
-    print("list predictions", len(list2))
+    # print("list predictions", len(list2))
     # print("list_type_predictions", list_type_predictions)
     # Calculate the absolute differences between corresponding elements
 
@@ -79,8 +79,8 @@ def mae(list1, list2, list_type_predictions, list_sorted_dicts):
         absolute_errors.append(error)
         if error > 5:
             big_errors.append(dict_['image_name'])
-    print("len(big_errors)", len(big_errors))
-    print("big_errors", big_errors)
+    # print("len(big_errors)", len(big_errors))
+    # print("big_errors", big_errors)
     #######################################################################################
 
     ##################################################################################
@@ -93,12 +93,12 @@ def mae(list1, list2, list_type_predictions, list_sorted_dicts):
             # print('here')
             if error < 5:
                 small_errors_big_tumors.append(dict_['image_name'])
-    print("len(small_errors_big_tumors)", len(small_errors_big_tumors))
-    print("small_errors_big_tumors", small_errors_big_tumors)
+    # print("len(small_errors_big_tumors)", len(small_errors_big_tumors))
+    # print("small_errors_big_tumors", small_errors_big_tumors)
     #######################################################################################
 
     # Calculate the mean absolute error (MAE)
-    print("absolute_errors", absolute_errors)
+    # print("absolute_errors", absolute_errors)
     mae = sum(absolute_errors) / len(list1)
 
     # # to visualize

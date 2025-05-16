@@ -5,92 +5,186 @@ from sklearn.cluster import DBSCAN
 from sklearn.linear_model import RANSACRegressor
 from skimage.morphology import skeletonize
 from sklearn.linear_model import LinearRegression
+import pdb
 
 # --- Module: Estimate Instrument Pose ---
+# def estimate_instrument_pose(K_matrix, instrument_radius_mm, line1_coeffs, line2_coeffs, viz_copy):
+#     """
+#     Estimates the 3D pose of a cylindrical instrument...
+#     """
+#     if line1_coeffs is None or line2_coeffs is None:
+#         print("Debug (estimate_pose): Input line coefficients are None.")
+#         return None, None
+
+#     l1 = np.array(line1_coeffs).reshape(3, 1)
+#     l2 = np.array(line2_coeffs).reshape(3, 1)
+#     K = K_matrix
+#     r = instrument_radius_mm
+
+#     K = K.astype(np.float64)
+#     l1 = l1.astype(np.float64)
+#     l2 = l2.astype(np.float64)
+
+#     try: # Added try-except for potential matrix operation errors
+#         n1 = K.T @ l1
+#         n2 = K.T @ l2
+#         n1 = n1.flatten()
+#         n2 = n2.flatten()
+#     except Exception as e:
+#             print(f"Debug (estimate_pose): Error during K.T @ l calculation: {e}")
+#             return None, None
+
+
+#     n1_norm = np.linalg.norm(n1)
+#     n2_norm = np.linalg.norm(n2)
+
+#     if n1_norm < 1e-9 or n2_norm < 1e-9:
+#         print("Debug (estimate_pose): Error: Normal vector for a line is close to zero.")
+#         return None, None
+
+#     n1_unit = n1 / n1_norm
+#     n2_unit = n2 / n2_norm
+
+#     v_L = np.cross(n1_unit, n2_unit)
+#     v_L_norm = np.linalg.norm(v_L)
+
+#     if v_L_norm < 1e-9:
+#         print("Debug (estimate_pose): Error: Back-projection planes are parallel (v_L norm zero).")
+#         return None, None
+#     v_L_unit = v_L / v_L_norm
+
+#     n_m_direction = n1_unit + n2_unit
+#     n_m_direction_norm = np.linalg.norm(n_m_direction)
+
+#     if n_m_direction_norm < 1e-9:
+#         print("Debug (estimate_pose): Error: Bisector plane normal is close to zero.")
+#         return None, None
+#     n_m_unit = n_m_direction / n_m_direction_norm
+
+#     v_OPc_direction = np.cross(v_L_unit, n_m_unit)
+#     v_OPc_direction_norm = np.linalg.norm(v_OPc_direction)
+
+#     if v_OPc_direction_norm < 1e-9:
+#         print("Debug (estimate_pose): Error: Direction vector v_OPc is close to zero.")
+#         return None, None
+#     v_OPc_unit = v_OPc_direction / v_OPc_direction_norm
+
+#     cos_alpha = np.clip(np.dot(n1_unit, n2_unit), -1.0, 1.0)
+#     # print('cos_alpha', cos_alpha)
+#     alpha = np.arccos(cos_alpha)
+#     # print('alpha', alpha)
+
+#     if alpha < 1e-6 or np.abs(alpha - np.pi) < 1e-6:
+#         print("Debug (estimate_pose): Error: Angle alpha between planes is too small or too large.")
+#         return None, None
+
+#     sin_alpha_half = np.sin(alpha / 2.0)
+#     # print('sin_alpha_half', sin_alpha_half)
+#     if np.abs(sin_alpha_half) < 1e-9:
+#         print("Debug (estimate_pose): Error: sin(alpha/2) is close to zero.")
+#         return None, None
+
+#     d_OPc = r / sin_alpha_half
+#     P_c = d_OPc * v_OPc_unit
+
+#     if P_c[2] < 0:
+#             print(f"Debug (estimate_pose): Warning: Estimated Z-depth of P_c is negative ({P_c[2]:.3f}). Flipping sign.")
+#             P_c = -P_c # Flip to be in front of the camera
+
+#     # pdb.set_trace()
+#     return P_c, v_L_unit, viz_copy
+
 def estimate_instrument_pose(K_matrix, instrument_radius_mm, line1_coeffs, line2_coeffs, viz_copy):
     """
     Estimates the 3D pose of a cylindrical instrument...
+    Returns (P_c, v_L_unit, viz_copy), or (None, None, viz_copy) on failure.
     """
+    # --- input checks ---
     if line1_coeffs is None or line2_coeffs is None:
-        print("Debug (estimate_pose): Input line coefficients are None.")
-        return None, None
+        print("Debug: Input line coefficients are None.")
+        return None, None, viz_copy
 
-    l1 = np.array(line1_coeffs).reshape(3, 1)
-    l2 = np.array(line2_coeffs).reshape(3, 1)
-    K = K_matrix
-    r = instrument_radius_mm
+    r = float(instrument_radius_mm)
+    if r <= 0:
+        print("Debug: instrument_radius_mm must be > 0.")
+        return None, None, viz_copy
 
-    K = K.astype(np.float64)
-    l1 = l1.astype(np.float64)
-    l2 = l2.astype(np.float64)
+    # --- prepare data ---
+    l1 = np.array(line1_coeffs, dtype=np.float64).reshape(3, 1)
+    l2 = np.array(line2_coeffs, dtype=np.float64).reshape(3, 1)
+    K  = np.array(K_matrix, dtype=np.float64)
 
-    try: # Added try-except for potential matrix operation errors
-        n1 = K.T @ l1
-        n2 = K.T @ l2
-        n1 = n1.flatten()
-        n2 = n2.flatten()
-    except Exception as e:
-            print(f"Debug (estimate_pose): Error during K.T @ l calculation: {e}")
-            return None, None
+    n1 = (K.T @ l1).flatten()
+    n2 = (K.T @ l2).flatten()
 
-
+    # --- normalize and guard against degenerate cases ---
     n1_norm = np.linalg.norm(n1)
     n2_norm = np.linalg.norm(n2)
-
     if n1_norm < 1e-9 or n2_norm < 1e-9:
-        print("Debug (estimate_pose): Error: Normal vector for a line is close to zero.")
-        return None, None
+        print("Debug: One of the plane normals is zero-length.")
+        return None, None, viz_copy
 
     n1_unit = n1 / n1_norm
     n2_unit = n2 / n2_norm
+    # print("n1_unit:", n1_unit, " n2_unit:", n2_unit, " dot:", np.dot(n1_unit,n2_unit))
 
+    # --- disambiguate sign so they form an acute angle ---
+    if float(n1_unit.dot(n2_unit)) < 0:
+        n2_unit = -n2_unit
+
+    # --- intersection line direction ---
     v_L = np.cross(n1_unit, n2_unit)
     v_L_norm = np.linalg.norm(v_L)
-
     if v_L_norm < 1e-9:
-        print("Debug (estimate_pose): Error: Back-projection planes are parallel (v_L norm zero).")
-        return None, None
+        print("Debug: Back-projection planes are parallel.")
+        return None, None, viz_copy
     v_L_unit = v_L / v_L_norm
+    # print("v_L_unit:", v_L_unit, "norm:", v_L_norm)
 
-    n_m_direction = n1_unit + n2_unit
-    n_m_direction_norm = np.linalg.norm(n_m_direction)
+    # --- bisector plane normal ---
+    n_m = n1_unit + n2_unit
+    n_m_norm = np.linalg.norm(n_m)
+    if n_m_norm < 1e-9:
+        print("Debug: Bisector plane normal is close to zero.")
+        return None, None, viz_copy
+    n_m_unit = n_m / n_m_norm
+    # print("n_m_unit:", n_m_unit, "norm:", n_m_norm)
 
-    if n_m_direction_norm < 1e-9:
-        print("Debug (estimate_pose): Error: Bisector plane normal is close to zero.")
-        return None, None
-    n_m_unit = n_m_direction / n_m_direction_norm
+    # --- direction to circle center ---
+    v_OPc = np.cross(v_L_unit, n_m_unit)
+    v_OPc_norm = np.linalg.norm(v_OPc)
+    if v_OPc_norm < 1e-9:
+        print("Debug: Direction vector to P_c is zero.")
+        return None, None, viz_copy
+    v_OPc_unit = v_OPc / v_OPc_norm
 
-    v_OPc_direction = np.cross(v_L_unit, n_m_unit)
-    v_OPc_direction_norm = np.linalg.norm(v_OPc_direction)
+    # --- angle between planes and depth ---
+    cos_alpha = np.clip(np.dot(n1_unit, n2_unit), -1, 1)
+    alpha     = np.arccos(cos_alpha)
+    # print("alpha [deg]:", np.degrees(alpha))
 
-    if v_OPc_direction_norm < 1e-9:
-        print("Debug (estimate_pose): Error: Direction vector v_OPc is close to zero.")
-        return None, None
-    v_OPc_unit = v_OPc_direction / v_OPc_direction_norm
+    # --- new: clamp very small angles instead of bailing out ---
+    eps = 0.005  # ~0.3°
+    if alpha < eps:
+        print(f"Debug: α ({alpha:.6f}) < eps, clamping to {eps:.6f}")
+        alpha = eps
 
-    cos_alpha = np.clip(np.dot(n1_unit, n2_unit), -1.0, 1.0)
-    # print('cos_alpha', cos_alpha)
-    alpha = np.arccos(cos_alpha)
-    # print('alpha', alpha)
+    sin_half = np.sin(alpha/2.0)
+    # print("sin(alpha/2):", sin_half)
+    if abs(sin_half) < 1e-9:
+        # this really should never happen now that we've clamped
+        print("Debug: sin(alpha/2) too small even after clamp.")
+        return None, None, viz
 
-    if alpha < 1e-6 or np.abs(alpha - np.pi) < 1e-6:
-        print("Debug (estimate_pose): Error: Angle alpha between planes is too small or too large.")
-        return None, None
-
-    sin_alpha_half = np.sin(alpha / 2.0)
-    # print('sin_alpha_half', sin_alpha_half)
-    if np.abs(sin_alpha_half) < 1e-9:
-        print("Debug (estimate_pose): Error: sin(alpha/2) is close to zero.")
-        return None, None
-
-    d_OPc = r / sin_alpha_half
-    P_c = d_OPc * v_OPc_unit
+    d_OPc = r / sin_half
+    P_c   = d_OPc * v_OPc_unit
 
     if P_c[2] < 0:
-            print(f"Debug (estimate_pose): Warning: Estimated Z-depth of P_c is negative ({P_c[2]:.3f}). Flipping sign.")
-            P_c = -P_c # Flip to be in front of the camera
+        print(f"Debug: Z negative ({P_c[2]:.3f}), flipping.")
+        P_c = -P_c
 
     return P_c, v_L_unit, viz_copy
+
 
 def fit_shaft_lines(segmentation_mask, original_image_bgr, path_save):
 
