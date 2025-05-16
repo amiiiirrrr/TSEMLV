@@ -16,7 +16,12 @@ class UnikDepther:
     def unik_depther(self, image_path):
 
         # Load the RGB image and the normalization will be taken care of by the model
-        rgb = torch.from_numpy(np.array(Image.open(image_path))).permute(2, 0, 1) # C, H, W
+        image_loaded = Image.open(image_path)
+
+        if image_loaded.size != self.args.camera_record_size:
+            image_loaded = image_loaded.resize(self.args.camera_record_size, Image.BILINEAR) 
+
+        rgb = torch.from_numpy(np.array(image_loaded)).permute(2, 0, 1) # C, H, W
 
         predictions = self.model.infer(rgb)
 

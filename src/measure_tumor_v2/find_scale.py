@@ -85,10 +85,13 @@ class ScaleDepth:
         """
         samples = []
         H, W = D_rel.shape
+        # print('H, W', (H, W))
         for u, v, Z_true in valid_projected:
             ui, vi = int(round(u)), int(round(v))
+            # print('ui, vi', (ui, vi))
             if 0 <= ui < W and 0 <= vi < H:
                 Z_rel = D_rel[vi, ui]
+                # print('Z_rel', Z_rel)
                 if Z_rel > 0:
                     samples.append((Z_rel, Z_true))
         return samples
@@ -98,6 +101,7 @@ class ScaleDepth:
         Fit Z_true = s * Z_rel + b by least squares.
         Returns (s, b).
         """
+        # print('samples', samples)
         Zrel = np.array([zr for zr, _ in samples])
         Ztrue = np.array([zt for _, zt in samples])
         # print('Zrel', Zrel)
@@ -163,11 +167,11 @@ class ScaleDepth:
         # print('valid_points', valid_points)
         if len(valid_points)==0:
             valid_points, viz_copy = self.find_valid_points(K, -P_c, v_L, T, N, mask, viz_copy, path_save)
-            if len(valid_points)==0:
-                print("No valid samples for scale estimation")
-                return None, None, None, None
         # Sample depths and fit
         samples = self.sample_relative_depth(D_rel, valid_points)
+        if len(samples)==0:
+            print("No valid samples for scale estimation")
+            return None, None, None, None
         
         s, b = self.fit_scale_and_bias(samples)
         # s, b = self.fit_inverse_model(samples)

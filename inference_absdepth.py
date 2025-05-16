@@ -71,14 +71,14 @@ class Run:
             os.makedirs(self.args.output_path, exist_ok=True)
         for path, img, im0s, vid_cap in self.dataset:
             print('path', path)
-            # if 'WVDRSNDN_P1_27359' not in path:
+            # if 'PDMRSMN_P1_10258' not in path:
             #     continue
             dict_result = {}
             height, width, _ = im0s.shape
             # print('height', height)
             # print('width', width)
-            if (height != 576) and (width != 720):
-                im0s = cv2.resize(im0s, (720, 572))
+            if (height != 576) or (width != 720):
+                im0s = cv2.resize(im0s, self.args.camera_record_size)
             img_segmentation = im0s.copy()
             img_depth = im0s.copy()
             self.img_original = im0s.copy()

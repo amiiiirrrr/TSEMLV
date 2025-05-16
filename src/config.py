@@ -39,6 +39,7 @@ class Config:
         self.parser.add_argument('--f_y', type=int, default=529)
         self.parser.add_argument('--c_x', type=int, default=369)
         self.parser.add_argument('--c_y', type=int, default=277)
+        self.parser.add_argument('--camera_record_size', type=tuple, default=(720, 576))
         self.parser.add_argument('--coeffdistortions', type=int, default=[[-0.01001264, -1.03390557, -0.00322796,  0.00245444,  1.57661359]])
         self.parser.add_argument('--k1', type=float, default=-0.01001264, help='1st radial distortion coefficient')
         self.parser.add_argument('--k2', type=float, default=-1.03390557, help='2nd radial distortion coefficient')

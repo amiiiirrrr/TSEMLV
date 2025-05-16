@@ -48,10 +48,6 @@ class Run_Unik3d:
             # print('path', path)
             # if 'AGRMNPRZ_P4_27162' not in path:
             #     continue
-            dict_result = {}
-            height, width, _ = im0s.shape
-            if (height != 572) and (width != 720):
-                im0s = cv2.resize(im0s, (720, 572))
             img_depth = im0s.copy()
             self.img_original = im0s.copy()
 
