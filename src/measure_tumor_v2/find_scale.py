@@ -91,8 +91,10 @@ class ScaleDepth:
         # Filter sampled points: only keep those within the mask
         pts_within_mask, vis = self.filter_points_by_mask(projected_pts, mask, vis)
 
+        # Check: we can only calculate distances between points if at least 2 sampled points are inside the SI mask
         if len(pts_within_mask) < 2:
-            print('Less than 2 sampled points found within SI mask.')
+            if not len(pts_within_mask) == 0: # if no points are found with P_c, the algorithm will try -P_c
+                print('Less than 2 sampled points found within SI mask.') # 
             return pts_within_mask, vis
 
         else:
