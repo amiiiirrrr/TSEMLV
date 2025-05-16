@@ -318,7 +318,7 @@ def fit_line_ransac_prior(points, shaft_direction=None):
             # RANSAC parameters: max_trials, min_samples (minimum points to fit the model),
             # residual_threshold (max distance for a point to be an inlier).
             # These may need tuning based on the expected noise level.
-            ransac = RANSACRegressor(estimator=LinearRegression(), min_samples=2, residual_threshold=1.0) # Tunable parameters
+            ransac = RANSACRegressor(estimator=LinearRegression(), min_samples=2, residual_threshold=2.0, random_state=38) # Tunable parameters
             ransac.fit(X, y)
 
             if ransac.estimator_ is None:
