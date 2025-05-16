@@ -189,12 +189,12 @@ class ScaleDepth:
         if not samples:
             print("No valid samples for scale estimation")
             return None, None, None, None
-        # s, b = self.fit_scale_and_bias(samples)
-        s, b = self.fit_inverse_model(samples)
+        s, b = self.fit_scale_and_bias(samples)
+        # s, b = self.fit_inverse_model(samples)
         
         # Compute and save absolute depth
-        # D_abs = self.compute_absolute_depth_map(D_rel, s, b)
-        D_abs = self.compute_absolute_depth_map_fromDisparity(D_rel, s, b)
+        D_abs = self.compute_absolute_depth_map(D_rel, s, b)
+        # D_abs = self.compute_absolute_depth_map_fromDisparity(D_rel, s, b)
         abs_vis = (D_abs / (D_abs.max() + 1e-8) * 255).astype(np.uint8)
         cv2.imwrite(os.path.join(path_save, 'D_abs.png'), abs_vis)
         
