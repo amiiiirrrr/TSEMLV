@@ -101,21 +101,26 @@ class ScaleDepth:
         Fit Z_true = s * Z_rel + b by least squares.
         Returns (s, b).
         """
-        # print('samples', samples)
-        Zrel = np.array([zr for zr, _ in samples])
-        Ztrue = np.array([zt for _, zt in samples])
-        # print('Zrel', Zrel)
-        # print('Ztrue', Ztrue)
-        
+        Zrel = np.array([zr for zr, _ in samples], dtype=np.float64)
+        Ztrue= np.array([zt for _, zt in samples], dtype=np.float64)
+
+        if Zrel.size < 2:
+            print("Debug (fit): not enough samples to fit scale—using s=1, b=0.")
+            return 1.0, 0.0
+
         zr_mean = Zrel.mean()
         zt_mean = Ztrue.mean()
-        
+
         cov = ((Zrel - zr_mean) * (Ztrue - zt_mean)).sum()
         var = ((Zrel - zr_mean) ** 2).sum()
-        
+
+        if var < 1e-12:
+            print("Debug (fit): variance of Z_rel is zero—using s=1, b=0.")
+            return 1.0, 0.0
+
         s = cov / var
         b = zt_mean - s * zr_mean
-        return s, b
+        return float(s), float(b)
     
     # def fit_inverse_model(self, samples):
     #     """
@@ -182,7 +187,12 @@ class ScaleDepth:
         # D_abs = self.compute_absolute_depth_map_fromDisparity(D_rel, s, b)
         # D_abs = self.predict_true_depth_inverse(D_rel, s, b)
 
-        abs_vis = (D_abs / (D_abs.max() + 1e-8) * 255).astype(np.uint8)
+        # abs_vis = (D_abs / (D_abs.max() + 1e-8) * 255).astype(np.uint8)
+        # clean up any NaNs/Infs before casting
+        D_abs = np.nan_to_num(D_abs, nan=0.0, posinf=0.0, neginf=0.0)
+        vmax = D_abs.max() if D_abs.size else 0.0
+        abs_vis = (D_abs / (vmax + 1e-8) * 255).astype(np.uint8)
+
         cv2.imwrite(os.path.join(path_save, 'D_abs.png'), abs_vis)
         
         # Colorbar
