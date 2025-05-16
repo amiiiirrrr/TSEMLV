@@ -99,6 +99,8 @@ class ScaleDepth:
         """
         Zrel = np.array([zr for zr, _ in samples])
         Ztrue = np.array([zt for _, zt in samples])
+        # print('Zrel', Zrel)
+        # print('Ztrue', Ztrue)
         
         zr_mean = Zrel.mean()
         zt_mean = Ztrue.mean()
@@ -109,6 +111,25 @@ class ScaleDepth:
         s = cov / var
         b = zt_mean - s * zr_mean
         return s, b
+    
+    def fit_inverse_model(self, samples):
+        """
+        Fit Z_true = a*(1/Z_rel) + b by least squares.
+        samples: list of (Z_rel, Z_true) where Z_rel is disparity-like.
+        """
+        # Build X = 1/Z_rel, Y = Z_true
+        Zrel = np.array([zr for zr, _ in samples])
+        Ztrue = np.array([zt for _, zt in samples])
+        
+        X = 1.0 / Zrel
+        Y = Ztrue
+        
+        # compute means
+        Xm, Ym = X.mean(), Y.mean()
+        # slope & intercept
+        a = ((X - Xm) * (Y - Ym)).sum() / ((X - Xm)**2).sum()
+        b = Ym - a * Xm
+        return a, b
 
     def compute_absolute_depth_map(self, D_rel, s, b):
         """
@@ -116,6 +137,13 @@ class ScaleDepth:
         Returns absolute depth map.
         """
         return s * D_rel + b
+    
+    def compute_absolute_depth_map_fromDisparity(self, D_rel, s, b):
+        """
+        Convert a relative depth map to absolute using s and b.
+        Returns absolute depth map.
+        """
+        return s * (1/D_rel) + b
 
     def estimate_scale_and_depth_map(self, K, P_c, v_L, mask, D_rel, path_save, viz_copy, T=80.0, N=100):
         """
@@ -159,11 +187,14 @@ class ScaleDepth:
         # Sample depths and fit
         samples = self.sample_relative_depth(D_rel, valid)
         if not samples:
-            raise ValueError("No valid samples for scale estimation")
-        s, b = self.fit_scale_and_bias(samples)
+            print("No valid samples for scale estimation")
+            return None, None, None, None
+        # s, b = self.fit_scale_and_bias(samples)
+        s, b = self.fit_inverse_model(samples)
         
         # Compute and save absolute depth
-        D_abs = self.compute_absolute_depth_map(D_rel, s, b)
+        # D_abs = self.compute_absolute_depth_map(D_rel, s, b)
+        D_abs = self.compute_absolute_depth_map_fromDisparity(D_rel, s, b)
         abs_vis = (D_abs / (D_abs.max() + 1e-8) * 255).astype(np.uint8)
         cv2.imwrite(os.path.join(path_save, 'D_abs.png'), abs_vis)
         

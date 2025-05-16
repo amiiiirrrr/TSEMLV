@@ -65,9 +65,9 @@ def mae(list1, list2, list_type_predictions, list_sorted_dicts):
     list2 = [float(item) for item in list2]
 
     # print("list_sorted_dicts", list_sorted_dicts)
-    print("list gt", list1)
+    print("list gt", len(list1))
     # print("list gt", sum(list1))
-    print("list predictions", list2)
+    print("list predictions", len(list2))
     # print("list_type_predictions", list_type_predictions)
     # Calculate the absolute differences between corresponding elements
 
@@ -98,6 +98,7 @@ def mae(list1, list2, list_type_predictions, list_sorted_dicts):
     #######################################################################################
 
     # Calculate the mean absolute error (MAE)
+    print("absolute_errors", absolute_errors)
     mae = sum(absolute_errors) / len(list1)
 
     # # to visualize

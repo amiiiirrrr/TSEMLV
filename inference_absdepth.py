@@ -71,8 +71,8 @@ class Run:
             os.makedirs(self.args.output_path, exist_ok=True)
         for path, img, im0s, vid_cap in self.dataset:
             print('path', path)
-            if 'ANLLN_P1_16631' not in path:
-                continue
+            # if 'ANLLN_P1_16631' not in path:
+            #     continue
             dict_result = {}
             height, width, _ = im0s.shape
             # print('height', height)
@@ -140,12 +140,13 @@ class Run:
 
                     _, _, absolute_depth_map, viz_copy = self.depthScaleObj.estimate_scale_and_depth_map(K_matrix, P_s, v_L, si_mask, prediction_depth, self.path_save, viz_copy)
 
-                    estimated_tumor_size_results = self.measureTumorObj.measure_box_dimensions(K_matrix, absolute_depth_map, largest_tumor)
+                    if absolute_depth_map is not None:
+                        estimated_tumor_size_results = self.measureTumorObj.measure_box_dimensions(K_matrix, absolute_depth_map, largest_tumor)
 
-                    dict_result["horizontal length"] = estimated_tumor_size_results['horizontal'] 
-                    dict_result["vertical length"] = estimated_tumor_size_results['vertical']  
-                    dict_result["diagonal"] = estimated_tumor_size_results['diagonal']   
-                    self.list_results.append(dict_result)
+                        dict_result["horizontal length"] = estimated_tumor_size_results['horizontal'] 
+                        dict_result["vertical length"] = estimated_tumor_size_results['vertical']  
+                        dict_result["diagonal"] = estimated_tumor_size_results['diagonal']   
+                        self.list_results.append(dict_result)
 
 
         MAE = calculate_mae(self.args.ground_truth_path, self.list_results)
