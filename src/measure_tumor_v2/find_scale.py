@@ -77,6 +77,43 @@ class ScaleDepth:
             if 0 <= ui < W and 0 <= vi < H and mask[vi, ui]:
                 valid.append((u, v, Z))
         return valid, vis
+    
+    def filter_points(self, projected_pts, mask, vis):
+        """
+        Keep only points whose projection falls inside the mask,
+        and whose distance to the next point is leq than the mean distance for points within that mask.
+        Returns list of (u, v, Z_true).
+        """
+        H, W = mask.shape
+
+        # Compute distances between points
+        u, v, Z = np.int64(projected_pts[:,0]), np.int64(projected_pts[:,1]), projected_pts[:,2]
+        du, dv = np.diff(du), np.diff(dv)
+        distances = np.sqrt(du**2 + dv**2)
+        
+        # Find indices with distances >= mean distances
+        mean_distance = np.mean(distances)
+        distances_extended = np.concat([distances, np.array(distances[-1])]) # Extend distances to handle the last point of the points array
+        selected_indices = np.where(distances_extended >= mean_distance)[0]
+
+        valid = []
+        for idx, (u, v, Z) in enumerate(projected_pts):
+            ui, vi = int(round(u)), int(round(v))
+            
+            # CHECKS for inclusion of the sampled points
+            inside_image_check = (0 <= ui < W and 0 <= vi < H)
+            inside_mask_check = mask[vi, ui]
+            distance_check = idx in selected_indices
+
+            if inside_image_check and inside_mask_check:
+                
+                if distance_check:
+                    cv2.circle(vis, (ui, vi), 3, (0, 255, 255), -1) # visualise included point as yellow dot
+                    valid.append((u, v, Z))
+                else:
+                    cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1) # visualise excluded point within mask as red dot
+                    
+        return valid, vis
 
     def sample_relative_depth(self, D_rel, valid_projected):
         """
@@ -207,7 +244,8 @@ class ScaleDepth:
         
         # Overlay projected points on mask
         vis = cv2.cvtColor((mask * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
-        valid, vis = self.filter_points_by_mask(proj, mask, vis)
+        # valid, vis = self.filter_points_by_mask(proj, mask, vis)
+        valid, vis = self.filter_points(proj, mask, vis)
         cv2.imwrite(os.path.join(path_save, 'projected_points_overlay.png'), vis)
         # print('valid', valid)
 
