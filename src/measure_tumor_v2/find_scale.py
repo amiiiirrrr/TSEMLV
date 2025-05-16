@@ -73,9 +73,13 @@ class ScaleDepth:
         valid = []
         for u, v, Z in projected_pts:
             ui, vi = int(round(u)), int(round(v))
-            cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1)
-            if 0 <= ui < W and 0 <= vi < H and mask[vi, ui]:
-                valid.append((u, v, Z))
+            # Check if inside image bounds
+            if 0 <= ui < W and 0 <= vi < H:
+                # Check if inside SI mask
+                if mask[vi, ui]:
+                    cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1) # visualise as red dot
+                    valid.append((u, v, Z))
+
         return valid, vis
     
     def filter_points(self, projected_pts, mask, vis):
@@ -84,36 +88,37 @@ class ScaleDepth:
         and whose distance to the next point is leq than the mean distance for points within that mask.
         Returns list of (u, v, Z_true).
         """
-        H, W = mask.shape
+        # Filter sampled points: only keep those within the mask
+        pts_within_mask, vis = self.filter_points_by_mask(projected_pts, mask, vis)
 
-        # Compute distances between points
-        u, v, Z = np.int64(projected_pts[:,0]), np.int64(projected_pts[:,1]), projected_pts[:,2]
-        du, dv = np.diff(du), np.diff(dv)
-        distances = np.sqrt(du**2 + dv**2)
-        
-        # Find indices with distances >= mean distances
-        mean_distance = np.mean(distances)
-        distances_extended = np.concat([distances, np.array(distances[-1])]) # Extend distances to handle the last point of the points array
-        selected_indices = np.where(distances_extended >= mean_distance)[0]
+        if len(pts_within_mask) < 2:
+            print('Less than 2 sampled points found within SI mask.')
+            return pts_within_mask, vis
 
-        valid = []
-        for idx, (u, v, Z) in enumerate(projected_pts):
-            ui, vi = int(round(u)), int(round(v))
+        else:
+            # Compute distances between points
+            u_arr = np.array([u for u, _, _ in pts_within_mask])
+            v_arr = np.array([v for _, v, _ in pts_within_mask])
+            du, dv = np.diff(u_arr), np.diff(v_arr)
+            distances = np.sqrt(du**2 + dv**2)
             
-            # CHECKS for inclusion of the sampled points
-            inside_image_check = (0 <= ui < W and 0 <= vi < H)
-            inside_mask_check = mask[vi, ui]
-            distance_check = idx in selected_indices
+            # Find indices with distances >= mean distances
+            mean_distance = np.mean(distances)
+            distances_extended = np.concatenate([distances, np.array([distances[-1]])]) # Extend distances to handle the last point of the points array
+            selected_indices = np.where(distances_extended >= mean_distance)[0]
 
-            if inside_image_check and inside_mask_check:
-                
-                if distance_check:
+            valid = []
+            for idx, (u, v, Z) in enumerate(pts_within_mask):
+                ui, vi = int(round(u)), int(round(v))
+                # Check if distance between sampled points OK (>= mean distance)
+                if idx in selected_indices:
                     cv2.circle(vis, (ui, vi), 3, (0, 255, 255), -1) # visualise included point as yellow dot
                     valid.append((u, v, Z))
-                else:
-                    cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1) # visualise excluded point within mask as red dot
-                    
-        return valid, vis
+                # else:
+                #     cv2.circle(vis, (ui, vi), 3, (0, 0, 255), -1) # visualise excluded point within mask as red dot
+                        
+            return valid, vis
+        
 
     def sample_relative_depth(self, D_rel, valid_projected):
         """
@@ -255,6 +260,7 @@ class ScaleDepth:
         # Overlay projected points on mask
         vis = cv2.cvtColor((mask * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
         # valid, vis = self.filter_points_by_mask(proj, mask, vis)
+        # Filter 'good' points to scale the relative depth map: sampled points within SI mask, but those close to instrument tip get removed
         valid, vis = self.filter_points(proj, mask, vis)
         cv2.imwrite(os.path.join(path_save, 'projected_points_overlay.png'), vis)
         # print('valid', valid)
