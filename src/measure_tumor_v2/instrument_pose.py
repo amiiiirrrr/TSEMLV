@@ -341,7 +341,7 @@ def fit_line_ransac_prior(points, shaft_direction=None):
             y = points[:, 0]              # Dependent variable (x)
 
             # Use appropriate residual threshold for swapped axes if needed, or keep consistent
-            ransac = RANSACRegressor(estimator=LinearRegression(), min_samples=2, residual_threshold=2.0) # Tunable parameters
+            ransac = RANSACRegressor(estimator=LinearRegression(), min_samples=2, residual_threshold=2.0, random_state=38) # Tunable parameters
             ransac.fit(X, y)
 
             if ransac.estimator_ is None:
