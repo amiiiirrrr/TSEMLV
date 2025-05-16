@@ -118,7 +118,7 @@ class Config:
                         )
         #########################################################################################################
         ################### Yolo detection Config ###################################
-        self.parser.add_argument('--weights', nargs='+', type=str, default='../../../detection/yolov7/pretrained/yolov7-e6e_training.pt', help='model.pt path(s)')
+        self.parser.add_argument('--weights', nargs='+', type=str, default='models/DetectionModels/yolov7/pretrained/yolov7-e6e_training.pt', help='model.pt path(s)')
         self.parser.add_argument('--source', type=str, default='data/surgeon_images_miccai_workshop', help='source')  # file/folder, 0 for webcam
         # self.parser.add_argument('--source', type=str, default='data/surgeon_images_v2', help='source') 
         self.parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
